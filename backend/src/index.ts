@@ -9,14 +9,6 @@ app.use(cors({
 }));
 const port = process.env.PORT || 3000;
 
-interface Note {
-    id: number;
-    title: string;
-    description: string;
-}
-
-let notes: Note[] = [];
-
 async function createInitialTable() {
     const createTable = `CREATE TABLE IF NOT EXISTS notes (
         id SERIAL PRIMARY KEY,

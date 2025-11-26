@@ -1,5 +1,6 @@
 import express, {Request, Response} from 'express';
 const cors = require("cors");
+import pool from "./db"
 
 const app = express();
 app.use(express.json());
@@ -16,41 +17,63 @@ interface Note {
 
 let notes: Note[] = [];
 
-app.get('/notes', (req: Request, res: Response) => {
-    res.status(201).json(notes);
+async function createInitialTable() {
+    const createTable = `CREATE TABLE IF NOT EXISTS notes (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR NOT NULL,
+        description VARCHAR NOT NULL
+    );`;
+    try {
+        await pool.query(createTable);
+        console.log("Table created/exists already");
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+createInitialTable();
+
+app.get('/notes', async (req: Request, res: Response) => {
+    try {
+        const result = await pool.query('SELECT * FROM notes');
+        res.status(201).json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Internal Server Error");
+    }
 })
 
-app.post("/notes", (req: Request, res: Response) => {
+app.post("/notes", async (req: Request, res: Response) => {
     let noteTitle: string = req.body.title;
     let noteDescription: string = req.body.description;
     if (noteTitle && noteDescription) {
-        notes.push({
-            id: notes.length + 1,
-            title: noteTitle,
-            description: noteDescription,
-        });
+        const count = (await pool.query('SELECT * FROM notes')).rows.length + 1;
+        await pool.query('INSERT INTO notes(id, title, description) VALUES($1, $2, $3)', [count, noteTitle, noteDescription]);
         return res.status(201).json("note added");
     } else {
         return res.status(400).json("Please enter a valid note");
     }
 })
 
-app.put("/note/:id", (req: Request, res: Response) =>  {
+app.put("/note/:id", async (req: Request, res: Response) =>  {
     let noteId: number = parseInt(req.params.id);
     const updateData = req.body;
-    let index = notes.findIndex(n => n.id === noteId);
-    notes[index].title = updateData.title;
-    notes[index].description = updateData.description;
-    
-    res.status(201).json("Note updated");
+    try {
+        await pool.query('UPDATE notes SET title = $1, description = $2 WHERE id = $3', [updateData.title, updateData.description, noteId]);
+        res.status(201).json("Note updated");
+    } catch {
+        res.status(500).json("Error updating note");
+    }
 })
 
-app.delete("/note/:id", (req: Request, res: Response) => {
+app.delete("/note/:id", async (req: Request, res: Response) => {
     const noteId: number = parseInt(req.params.id);
-    let index = notes.findIndex(n => n.id === noteId);
-    notes.splice(index, 1);
-
-    res.status(201).json("note deleted successfully");
+    try {
+        await pool.query('DELETE FROM notes WHERE id = $1', [noteId]);
+        res.status(201).json("note deleted successfully");
+    } catch (err) {
+        res.status(500).json("error deleting note");
+    }
 })
 
 app.listen(port, () => {

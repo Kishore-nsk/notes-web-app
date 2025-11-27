@@ -15,10 +15,12 @@ async function createInitialTable() {
     const createNotesTable = `CREATE TABLE IF NOT EXISTS notes (
         id SERIAL PRIMARY KEY,
         title VARCHAR NOT NULL,
-        description VARCHAR NOT NULL
+        description VARCHAR NOT NULL,
+        user_id INT,
+        FOREIGN KEY (user_id) REFERENCES users(user_id)
     );`;
     const createUsersTable = `CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
+        user_id SERIAL PRIMARY KEY,
         username VARCHAR NOT NULL,
         password VARCHAR NOT NULL
     );`;
@@ -34,20 +36,19 @@ async function createInitialTable() {
 createInitialTable();
 
 interface User {
-    id: number,
+    user_id: number,
     username: string,
     password: string,
 };
 
 const generateToken = (user: User) => {
-    return jwt.sign({id: user.id, username: user.username}, process.env.JWT_SECRET!, { expiresIn: '1h'});
+    return jwt.sign({id: user.user_id, username: user.username}, process.env.JWT_SECRET!, { expiresIn: '1h'});
 }
 
 app.post("/signup", async (req: Request, res: Response) => {
     const {username, password} = req.body;  
     if (username && password) {
-        const count = (await pool.query('SELECT * FROM users;')).rows.length + 1;
-        await pool.query('INSERT INTO users(id, username, password) VALUES ($1, $2, $3);', [count, username, password]);
+        await pool.query('INSERT INTO users(username, password) VALUES ($1, $2);', [username, password]);
         return res.status(201).json("User signed up successfully");
     } else {
         return res.status(400).json("Please enter valid username and password");
@@ -75,7 +76,8 @@ app.use(authMiddleware)
 
 app.get('/notes', async (req: Request, res: Response) => {
     try {
-        const result = await pool.query('SELECT * FROM notes');
+        const userId = req.user.id;
+        const result = await pool.query('SELECT * FROM notes WHERE user_id = $1', [userId]);
         res.status(201).json(result.rows);
     } catch (err) {
         console.error(err);
@@ -87,8 +89,7 @@ app.post("/notes", async (req: Request, res: Response) => {
     let noteTitle: string = req.body.title;
     let noteDescription: string = req.body.description;
     if (noteTitle && noteDescription) {
-        const count = (await pool.query('SELECT * FROM notes')).rows.length + 1;
-        await pool.query('INSERT INTO notes(id, title, description) VALUES($1, $2, $3)', [count, noteTitle, noteDescription]);
+        await pool.query('INSERT INTO notes(title, description, user_id) VALUES($1, $2, $3)', [noteTitle, noteDescription, req.user.id]);
         return res.status(201).json("note added");
     } else {
         return res.status(400).json("Please enter a valid note");

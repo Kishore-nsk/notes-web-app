@@ -1,6 +1,8 @@
 import express, {Request, Response} from 'express';
+import jwt from "jsonwebtoken";
 const cors = require("cors");
 import pool from "./db"
+import authMiddleware  from "./auth";
 
 const app = express();
 app.use(express.json());
@@ -10,13 +12,19 @@ app.use(cors({
 const port = process.env.PORT || 3000;
 
 async function createInitialTable() {
-    const createTable = `CREATE TABLE IF NOT EXISTS notes (
+    const createNotesTable = `CREATE TABLE IF NOT EXISTS notes (
         id SERIAL PRIMARY KEY,
         title VARCHAR NOT NULL,
         description VARCHAR NOT NULL
     );`;
+    const createUsersTable = `CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR NOT NULL,
+        password VARCHAR NOT NULL
+    );`;
     try {
-        await pool.query(createTable);
+        await pool.query(createNotesTable);
+        await pool.query(createUsersTable);
         console.log("Table created/exists already");
     } catch (err) {
         console.error(err);
@@ -24,6 +32,46 @@ async function createInitialTable() {
 }
 
 createInitialTable();
+
+interface User {
+    id: number,
+    username: string,
+    password: string,
+};
+
+const generateToken = (user: User) => {
+    return jwt.sign({id: user.id, username: user.username}, process.env.JWT_SECRET!, { expiresIn: '1h'});
+}
+
+app.post("/signup", async (req: Request, res: Response) => {
+    const {username, password} = req.body;  
+    if (username && password) {
+        const count = (await pool.query('SELECT * FROM users;')).rows.length + 1;
+        await pool.query('INSERT INTO users(id, username, password) VALUES ($1, $2, $3);', [count, username, password]);
+        return res.status(201).json("User signed up successfully");
+    } else {
+        return res.status(400).json("Please enter valid username and password");
+    }
+
+})
+
+app.post("/login", async (req: Request, res: Response) => {
+    const {username , password} = req.body;
+    const result = await pool.query('SELECT * FROM users WHERE username = $1 AND password = $2;', [username, password]);
+    if (result.rows.length === 1 ) {
+        const token = generateToken(result.rows[0]);
+        return res.json({token});
+    } else {
+        return res.status(400).json("Incorrect username or password");
+    }
+})
+
+app.get("/users", async (req: Request, res: Response) => {
+    const result = await pool.query("SELECT * FROM users;");
+    res.status(200).json(result.rows);
+})
+
+app.use(authMiddleware)
 
 app.get('/notes', async (req: Request, res: Response) => {
     try {

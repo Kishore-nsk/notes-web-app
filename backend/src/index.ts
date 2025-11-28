@@ -1,6 +1,7 @@
 import express, {Request, Response} from 'express';
 import jwt from "jsonwebtoken";
 const cors = require("cors");
+import bcrypt from "bcryptjs";
 import pool from "./db"
 import authMiddleware  from "./auth";
 
@@ -48,7 +49,8 @@ const generateToken = (user: User) => {
 app.post("/signup", async (req: Request, res: Response) => {
     const {username, password} = req.body;  
     if (username && password) {
-        await pool.query('INSERT INTO users(username, password) VALUES ($1, $2);', [username, password]);
+        const hashedPassword = await bcrypt.hash(password, 8);
+        await pool.query('INSERT INTO users(username, password) VALUES ($1, $2);', [username, hashedPassword]);
         return res.status(201).json("User signed up successfully");
     } else {
         return res.status(400).json("Please enter valid username and password");
@@ -58,8 +60,10 @@ app.post("/signup", async (req: Request, res: Response) => {
 
 app.post("/login", async (req: Request, res: Response) => {
     const {username , password} = req.body;
-    const result = await pool.query('SELECT * FROM users WHERE username = $1 AND password = $2;', [username, password]);
-    if (result.rows.length === 1 ) {
+    const hashedPassword = await bcrypt.hash(password, 8);
+    const verifyUser = await bcrypt.compare(password, hashedPassword);
+    const result = await pool.query('SELECT * FROM users WHERE username = $1;', [username]);
+    if (result.rows.length === 1 && verifyUser ) {
         const token = generateToken(result.rows[0]);
         return res.json({token});
     } else {

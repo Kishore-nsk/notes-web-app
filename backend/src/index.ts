@@ -1,9 +1,9 @@
 import express, {Request, Response} from 'express';
 import jwt from "jsonwebtoken";
-const cors = require("cors");
 import bcrypt from "bcryptjs";
 import pool from "./db"
 import authMiddleware  from "./auth";
+const cors = require("cors");
 
 const app = express();
 app.use(express.json());

@@ -40,7 +40,7 @@ function Default() {
     return (
         <>
             <div className="w-full text-center pt-2">
-                <p className="font-bold text-[18px]">You have 0 saved notes</p>
+                <p className="font-light italic text-[18px] underline decoration-dotted underline-offset-4">You have 0 saved notes.</p>
             </div>
         </>
     )

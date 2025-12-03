@@ -3,20 +3,18 @@ require('dotenv').config();
 import jwt from "jsonwebtoken";
 
 const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
-    const token = req.headers['authorization'];
+    const token = req.cookies.token;
     if (!token) {
         return res.status(403).json("No token provided");
     }
 
-    const tokenWithoutBearer = token.split(' ')[1];
-
-    jwt.verify(tokenWithoutBearer, process.env.JWT_SECRET! , (err, decoded) => {
-        if (err) {
-            return res.status(401).json({message: 'Invalid or expired token'});
-        }
-        req.user = decoded;
-        next();
-    });
+    try {
+         const user = jwt.verify(token, process.env.JWT_SECRET!);
+         req.user = user;
+         next();
+    } catch (err) {
+        return res.status(401).json({message: 'Invalid or expired token'});
+    }
 };
 
 export default authMiddleware;

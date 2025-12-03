@@ -11,7 +11,10 @@ export default function Selector() {
     const [notes, setNotes] = useState<NoteInt[]>([]);
 
     useEffect(() => {
-        fetch("http://localhost:3000/notes")
+        fetch("http://localhost:3000/notes", {
+            method: "GET",
+            credentials: "include",
+        })
             .then(res => {
                 return res.json();
             })
@@ -21,7 +24,7 @@ export default function Selector() {
             .catch(err => {
                 console.log(`Error: ${err}`);
             })
-    },[notes]);
+    },[]);
 
     const listItems = notes.map(note => {
         return <Note id={note.id} title={note.title} description={note.description}/>;

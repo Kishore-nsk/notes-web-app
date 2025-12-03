@@ -8,12 +8,11 @@ function App() {
     <>
       <div className="h-screen bg-[#d5e681] font-roboto flex justify-center items-center">
         <Routes>
-          {/* <Route path="/signup" element={<Signup />}></Route> */}
           <Route path="/signup" element={<Signup />}></Route>
           <Route path="/" element={<Login />}></Route>
           <Route path="/login" element={<Login />}></Route>
+          <Route path="/notes" element={<Board />}></Route>
         </Routes>
-        {/* <Board /> */}
       </div>
     </>
   )

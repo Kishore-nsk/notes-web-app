@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react"
 import Note from "./preview_note";
 
 interface NoteInt {
@@ -9,12 +8,15 @@ interface NoteInt {
 
 interface SelectorProps {
     notes: NoteInt[];
+    onComplete: () => void;
+    onRemove: () => void;
 }
 
-export default function Selector({ notes } : SelectorProps) {
+export default function Selector({ notes, onComplete, onRemove } : SelectorProps) {
     const listItems = notes.map(note => {
-        return <Note id={note.id} title={note.title} description={note.description}/>;
+        return <Note note={note} onRemove={onRemove} />;
     });
+    onComplete();
 
     return (
         <>

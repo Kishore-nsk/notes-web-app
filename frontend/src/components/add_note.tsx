@@ -1,7 +1,17 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 
-export default function AddNote() {
+interface NoteInt {
+    id: number;
+    title: string;
+    description: string;
+}
+
+interface addProps {
+    onAdd: () => void;
+}
+
+export default function AddNote({ onAdd }: addProps) {
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const navigate = useNavigate();
@@ -13,7 +23,7 @@ export default function AddNote() {
         if (isTitleEmpty || isDescriptionEmpty) {
             alert("Please fill in both Title and Description");
         }
-        const result = await fetch("http://localhost:3000/notes", {
+        await fetch("http://localhost:3000/notes", {
             method: "POST",
             credentials: "include",
             headers: {
@@ -21,6 +31,7 @@ export default function AddNote() {
             },
             body: JSON.stringify({title, description})
         });
+        onAdd();
         setTitle("");
         setDescription("");
     }

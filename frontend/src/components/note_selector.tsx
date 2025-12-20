@@ -7,25 +7,11 @@ interface NoteInt {
     description: string;
 }
 
-export default function Selector() {
-    const [notes, setNotes] = useState<NoteInt[]>([]);
+interface SelectorProps {
+    notes: NoteInt[];
+}
 
-    useEffect(() => {
-        fetch("http://localhost:3000/notes", {
-            method: "GET",
-            credentials: "include",
-        })
-            .then(res => {
-                return res.json();
-            })
-            .then(data => {
-                setNotes(data);
-            })
-            .catch(err => {
-                console.log(`Error: ${err}`);
-            })
-    },[]);
-
+export default function Selector({ notes } : SelectorProps) {
     const listItems = notes.map(note => {
         return <Note id={note.id} title={note.title} description={note.description}/>;
     });

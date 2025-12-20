@@ -46,7 +46,7 @@ interface User {
 };
 
 const generateToken = (user: User) => {
-    return jwt.sign({username: user.username}, process.env.JWT_SECRET!, { expiresIn: '1h'});
+    return jwt.sign({id: user.user_id, username: user.username}, process.env.JWT_SECRET!, { expiresIn: '1h'});
 }
 
 app.post("/signup", async (req: Request, res: Response) => {
@@ -72,15 +72,20 @@ app.post("/login", async (req: Request, res: Response) => {
     if (verifyUser ) {
         const token = generateToken(user);
         res.cookie('token',token, { httpOnly: true, sameSite: "lax", secure: false});
-        return res.json({"message": "login successfull", token});
+        return res.status(200).json({"message": "login successfull", token});
     } else {
-        return res.status(400).json("Incorrect username or password");
+        return res.status(400).json({"message": "Incorrect username or password"});
     }
 })
 
 app.get("/users", async (req: Request, res: Response) => {
     const result = await pool.query("SELECT * FROM users;");
     res.status(200).json(result.rows);
+})
+
+app.post("/signout", (req: Request , res: Response) => {
+    res.clearCookie("token");
+    return res.status(200).json({"message": "signout successsful"});
 })
 
 app.use(authMiddleware)
@@ -118,14 +123,13 @@ app.put("/note/:id", async (req: Request, res: Response) =>  {
     }
 })
 
-app.delete("/note/:id", async (req: Request, res: Response) => {
-    const noteId: number = parseInt(req.params.id);
-    try {
-        await pool.query('DELETE FROM notes WHERE id = $1', [noteId]);
-        res.status(201).json("note deleted successfully");
-    } catch (err) {
-        res.status(500).json("error deleting note");
+app.delete("/note/:title", async (req: Request, res: Response) => {
+    const noteTitle: string = req.params.title;
+    const result = await pool.query('DELETE FROM notes WHERE title = $1', [noteTitle]);
+    if (result.rowCount === 0) {
+        return res.status(404).json({message: "Note not found"});
     }
+    res.status(201).json("note deleted successfully");
 })
 
 app.listen(port, () => {

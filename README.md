@@ -3,5 +3,10 @@ Full stack Notes Web Application with Express, Postgres & Node.js for the backen
 Password storage performed with bcrypt and JWT based authentication implemented.
 
 Demo:
-https://github.com/user-attachments/assets/a66a88b3-a059-42d8-b9bf-7f43159c36d2
+
+
+
+https://github.com/user-attachments/assets/64b22dcb-9885-45a4-93d3-37517fdfdd26
+
+
 
